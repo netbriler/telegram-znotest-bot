@@ -1,4 +1,4 @@
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from utils.db.models import User
@@ -23,15 +23,8 @@ async def update_user(session: AsyncSession, user: User, name: str, username: st
     return user
 
 
-async def edit_user_language(session: AsyncSession, id: int, language: str):
-    sql = update(User).where(User.id == id).values(language=language)
-
-    await session.execute(sql)
-    await session.commit()
-
-
-async def create_user(session: AsyncSession, id: int, name: str, username: str = None, language: str = None) -> User:
-    new_user = User(id=id, name=name, username=username, language=language)
+async def create_user(session: AsyncSession, id: int, name: str, username: str = None) -> User:
+    new_user = User(id=id, name=name, username=username)
 
     session.add(new_user)
     await session.commit()
@@ -41,8 +34,7 @@ async def create_user(session: AsyncSession, id: int, name: str, username: str =
     return new_user
 
 
-async def get_or_create_user(session: AsyncSession, id: int, name: str, username: str = None,
-                             language: str = None) -> User:
+async def get_or_create_user(session: AsyncSession, id: int, name: str, username: str = None) -> User:
     user = await get_user(session, id)
 
     if user:
@@ -50,4 +42,4 @@ async def get_or_create_user(session: AsyncSession, id: int, name: str, username
 
         return user
 
-    return await create_user(session, id, name, username, language)
+    return await create_user(session, id, name, username)

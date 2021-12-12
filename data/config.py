@@ -26,6 +26,3 @@ REDIS_DB = config('REDIS_DB', default=5)
 
 WEBHOOK_HOST = config('WEBHOOK_HOST', default=None)
 WEBHOOK_PATH = config('WEBHOOK_PATH', default=None)
-
-I18N_DOMAIN = 'bot'
-LOCALES_DIR = f'{DIR}/locales'
