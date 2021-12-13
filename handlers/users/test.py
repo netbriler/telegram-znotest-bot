@@ -56,10 +56,10 @@ async def _question(callback_query: CallbackQuery, session, question, action, st
 async def _answer(callback_query: CallbackQuery, match, state, session):
     wrong_answer = None
 
-    async with state.proxy() as data:
-        if match == 'label':
-            return await callback_query.answer('Выберите ответ ⬜')
-        elif match == 'submit':
+    if match == 'label':
+        return await callback_query.answer('Выберите ответ ⬜')
+    elif match == 'submit':
+        async with state.proxy() as data:
             if 'selected_answer' not in data:
                 return await callback_query.answer('Для начала выберите ответ ⬜')
 
@@ -67,30 +67,33 @@ async def _answer(callback_query: CallbackQuery, match, state, session):
 
             question = await get_question(session, data['question_id'])
 
-            if id == int(question.answer_test):
-                await callback_query.answer('Верно ✅')
+        if id == int(question.answer_test):
+            await callback_query.answer('Верно ✅')
 
-                await clean_messages(state, callback_query.message)
+            await clean_messages(state, callback_query.message)
 
-                if 'delete_messages' not in data:
-                    data['delete_messages'] = list()
+            if 'delete_messages' not in data:
+                data['delete_messages'] = list()
 
-                message_to_delete = await _send_question(callback_query, session, question.test_id, state)
+            message_to_delete = await _send_question(callback_query, session, question.test_id, state)
+
+            async with state.proxy() as data:
                 data['delete_messages'].append(message_to_delete.message_id)
 
-                return
-            await callback_query.answer('Не верно ❌')
+            return
+        await callback_query.answer('Не верно ❌')
 
-            wrong_answer = id
-            id = int(question.answer_test)
-        else:
+        wrong_answer = id
+        id = int(question.answer_test)
+    else:
+        async with state.proxy() as data:
             id = int(match)
             data['selected_answer'] = id
             await callback_query.answer('Выбрано 👍')
 
-        await callback_query.message.edit_reply_markup(
-            reply_markup=get_test_question_inline_markup(await get_question(session, data['question_id']),
-                                                         data['chapter_id'], id, wrong_answer))
+    await callback_query.message.edit_reply_markup(
+        reply_markup=get_test_question_inline_markup(await get_question(session, data['question_id']),
+                                                     data['chapter_id'], id, wrong_answer))
 
 
 async def _send_question(callback_query: CallbackQuery, session, test_id, state):
@@ -102,7 +105,8 @@ async def _send_question(callback_query: CallbackQuery, session, test_id, state)
         data['question_id'] = question.id
         data['test_id'] = test.id
         data['chapter_id'] = test.chapter_id
-        data['selected_answer'] = 0
+        if 'selected_answer' in data:
+            del data['selected_answer']
 
     if question.question_image:
         return await callback_query.message.answer_photo(f'https://zno.osvita.ua{question.question_image}',
