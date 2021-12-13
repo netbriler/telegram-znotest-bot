@@ -1,3 +1,4 @@
+from sqlalchemy import and_
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,7 +16,7 @@ async def get_question(session: AsyncSession, id: int) -> Question:
 
 
 async def get_questions(session: AsyncSession, test_id: int) -> list[Question]:
-    sql = select(Question).where(Question.test_id == test_id)
+    sql = select(Question).where(and_(Question.test_id == test_id, Question.test_type == '4x1'))
     query = await session.execute(sql)
 
     return [t for t, in query]

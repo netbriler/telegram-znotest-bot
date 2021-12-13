@@ -133,4 +133,4 @@ dmypy.json
 .idea/*
 .env
 
-data/database.sqlite3
+#data/database.sqlite3

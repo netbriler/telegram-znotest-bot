@@ -20,14 +20,12 @@ class Question(BoundFilter):
 
         session = message.bot.get('session')
 
-        match = re.match('^question_(\d+)(_(\w+))?$', text)
+        match = re.match('^question_(\d+)(_(\w+))$', text)
 
         if not match:
             return False
 
         question = await get_question(session, match.group(1))
-
-        print(match.group(3), match.group(1), question)
 
         if not question:
             return False

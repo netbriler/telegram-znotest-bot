@@ -20,7 +20,7 @@ class Question(Base):
     type = Column(String)
 
     test_type = Column(String)
-    answer_test = Column(String)
+    answer_test = Column(Integer)
 
     input_count = Column(Integer)
     answer1 = Column(String)
