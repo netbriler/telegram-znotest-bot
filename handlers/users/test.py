@@ -102,6 +102,7 @@ async def _send_question(callback_query: CallbackQuery, session, test_id, state)
         data['question_id'] = question.id
         data['test_id'] = test.id
         data['chapter_id'] = test.chapter_id
+        data['selected_answer'] = 0
 
     if question.question_image:
         return await callback_query.message.answer_photo(f'https://zno.osvita.ua{question.question_image}',
