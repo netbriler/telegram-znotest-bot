@@ -2,7 +2,7 @@ import random
 
 from aiogram.types import CallbackQuery
 
-from keyboards.inline import get_question4x4_inline_markup, get_question4x1_inline_markup
+from keyboards.inline import get_question4x4_inline_markup, get_question4x1_inline_markup, get_chapter_inline_markup
 from loader import dp
 from services.questions import get_questions, get_question
 from services.tests import get_test
@@ -80,7 +80,7 @@ async def _answer_4x1(callback_query: CallbackQuery, match, state, session):
                 data['delete_messages'] = [message_to_delete.message_id]
 
             return
-        
+
         await callback_query.answer('Не верно ❌')
 
         wrong_answer = selected_answer
@@ -127,7 +127,7 @@ async def _answer_4x4(callback_query: CallbackQuery, state, session, match, inde
                 data['delete_messages'] = [message_to_delete.message_id]
 
             return
-        
+
         await callback_query.answer('Не верно ❌')
 
         selected_answers = [int(_) for _ in question.answer_test.split(',')]
@@ -151,7 +151,19 @@ async def _answer_4x4(callback_query: CallbackQuery, state, session, match, inde
 
 
 async def _send_question(callback_query: CallbackQuery, session, test_id, state):
-    question = random.choice(await get_questions(session, test_id))
+    async with state.proxy() as data:
+        if 'questions' not in data:
+            data['questions'] = list()
+
+    questions = await get_questions(session, test_id, exclude_ids=data['questions'])
+
+    if not questions:
+        await state.finish()
+        await callback_query.message.answer('Вопросы закончились 🤟')
+        return await callback_query.message.answer('Выберите тему 👇',
+                                                   reply_markup=await get_chapter_inline_markup(session))
+
+    question = random.choice(questions)
 
     test = await get_test(session, test_id)
 
@@ -171,6 +183,7 @@ async def _send_question(callback_query: CallbackQuery, session, test_id, state)
         data['is_answered'] = False
         data['selected_answer'] = None
         data['selected_answers'] = [None, None, None, None]
+        data['questions'].append(question.id)
 
     if question.question_image:
         return await callback_query.message.answer_photo(f'https://zno.osvita.ua{question.question_image}',
