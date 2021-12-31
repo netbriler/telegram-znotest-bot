@@ -8,6 +8,8 @@ from utils.misc.logging import logger
 async def on_startup(dispatcher):
     logger.info('Bot startup')
 
+    logger.info(await bot.get_me())
+
     bot['session'] = await create_async_database()
 
     for admin_id in config.ADMINS:

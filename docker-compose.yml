@@ -11,6 +11,7 @@ services:
       - ./entrypoint.sh
     volumes:
       - ./data/logs:/usr/src/app/data/logs
+      - ./data/database.sqlite3:/app/data/database.sqlite3
     depends_on:
 #      - postgres
       - redis

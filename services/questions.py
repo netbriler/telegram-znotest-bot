@@ -16,7 +16,7 @@ async def get_question(session: AsyncSession, id: int) -> Question:
 
 
 async def get_questions(session: AsyncSession, test_id: int) -> list[Question]:
-    sql = select(Question).where(and_(Question.test_id == test_id, Question.test_type == '4x1'))
+    sql = select(Question).where(and_(Question.test_id == test_id, Question.test_type.in_(['4x1', '4x4'])))
     query = await session.execute(sql)
 
     return [t for t, in query]

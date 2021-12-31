@@ -16,9 +16,10 @@ class Answer(BoundFilter):
         else:
             return False
 
-        match = re.match('^answer_(\d|label|submit)$', text)
+        match = re.match('^answer(_(\d))?_(\d|submit)$', text)
 
         if not match:
             return False
 
-        return {'match': match.group(1)}
+        return {'match': int(match.group(3)) if match.group(3).isnumeric() else match.group(3),
+                'index': int(match.group(2)) if match.group(2) else None}
