@@ -4,15 +4,10 @@ from aiogram.types import CallbackQuery
 
 from keyboards.inline import get_question4x4_inline_markup, get_question4x1_inline_markup, get_chapter_inline_markup
 from loader import dp
-from services.questions import get_questions, get_question
+from services.questions import get_questions, get_question, count_questions
 from services.tests import get_test
 from states import Test
 from utils.helper import clean_messages
-
-
-@dp.callback_query_handler(text='chapters', state='*')
-async def _back_to_chapters(callback_query: CallbackQuery, session):
-    await callback_query.message.edit_reply_markup(reply_markup=await get_chapter_inline_markup(session))
 
 
 @dp.callback_query_handler(is_test=True, state='*')
@@ -69,6 +64,9 @@ async def _answer_4x1(callback_query: CallbackQuery, match, state, session):
             selected_answer = data['selected_answer']
             question = await get_question(session, data['question_id'])
 
+            if selected_answer == int(question.answer_test):
+                data['user_balls'] += 1
+
         if selected_answer == int(question.answer_test):
             await callback_query.answer('Верно ✅')
 
@@ -116,6 +114,12 @@ async def _answer_4x4(callback_query: CallbackQuery, state, session, match, inde
 
             question = await get_question(session, data['question_id'])
 
+            right_answers = [int(_) for _ in question.answer_test.split(',')]
+
+            for i in range(4):
+                if data['selected_answers'][i] == right_answers[i]:
+                    data['user_balls'] += 1
+
         if ','.join(str(_) for _ in data['selected_answers']) == question.answer_test:
             await callback_query.answer('Верно ✅')
 
@@ -130,7 +134,7 @@ async def _answer_4x4(callback_query: CallbackQuery, state, session, match, inde
 
         await callback_query.answer('Не верно ❌')
 
-        selected_answers = [int(_) for _ in question.answer_test.split(',')]
+        selected_answers = right_answers
         wrong_answers = data['selected_answers']
 
         is_answered = True
@@ -157,15 +161,18 @@ async def _send_question(callback_query: CallbackQuery, session, test_id, state)
 
     questions = await get_questions(session, test_id, exclude_ids=data['questions'])
 
+    test = await get_test(session, test_id)
+
     if not questions:
         await state.finish()
-        await callback_query.message.answer('Вопросы закончились 🤟')
+        await callback_query.message.answer(
+            f'Вопросы закончились 🤟\n\nТема: <i>{test.name}</i>\nНабрано <b>{data["user_balls"]}</b> '
+            f'из <b>{data["total_balls"]}</b> возможных баллов\n' 
+            f'Процент правильных ответов: <b>{round(data["user_balls"] * 100 / data["total_balls"])} %</b>')
         return await callback_query.message.answer('Выберите тему 👇',
                                                    reply_markup=await get_chapter_inline_markup(session))
 
     question = random.choice(questions)
-
-    test = await get_test(session, test_id)
 
     if question.test_type == '4x1':
         await Test.question_4x1.set()
@@ -184,10 +191,21 @@ async def _send_question(callback_query: CallbackQuery, session, test_id, state)
         data['selected_answer'] = None
         data['selected_answers'] = [None, None, None, None]
         data['questions'].append(question.id)
+        if 'total_balls' not in data:
+            data['total_balls'] = 0
+
+        if 'user_balls' not in data:
+            data['user_balls'] = 0
+
+        data['total_balls'] += 1 if question.test_type == '4x1' else 4
+
+    questions_count = await count_questions(session, test.id)
 
     if question.question_image:
         return await callback_query.message.answer_photo(f'https://zno.osvita.ua{question.question_image}',
-                                                         caption=question.question,
+                                                         caption=f'<b>{len(data["questions"])}</b>/{questions_count}\n'
+                                                                 + (question.question if question.question else ''),
                                                          reply_markup=markup)
-    return await callback_query.message.answer(question.question,
-                                               reply_markup=markup)
+    return await callback_query.message.answer(
+        f'<b>{len(data["questions"])}</b>/{questions_count}\n' + (question.question if question.question else ''),
+        reply_markup=markup)

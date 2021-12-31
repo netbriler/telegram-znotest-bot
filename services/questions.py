@@ -1,9 +1,16 @@
-from sqlalchemy import and_
-from sqlalchemy import select
+from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from utils.db.models import Question
 from utils.misc.logging import logger
+
+
+async def count_questions(session: AsyncSession, test_id: int):
+    sql = select([func.count()]).where(
+        and_(Question.test_id == test_id, Question.test_type.in_(['4x1', '4x4']))).select_from(Question)
+    query = await session.execute(sql)
+
+    return query.scalar()
 
 
 async def get_question(session: AsyncSession, id: int) -> Question:

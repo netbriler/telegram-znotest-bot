@@ -5,8 +5,10 @@ from loader import dp
 
 
 @dp.callback_query_handler(text='chapters', state='*')
-async def _back_to_chapters(callback_query: CallbackQuery, session):
+async def _back_to_chapters(callback_query: CallbackQuery, session, state):
     await callback_query.message.delete()
+
+    await state.finish()
 
     await callback_query.message.answer('Выберите тему 👇', reply_markup=await get_chapter_inline_markup(session))
 
